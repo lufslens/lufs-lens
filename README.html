@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>LUFS Lens - README</title>
+
+<style>
+  body {
+    font-family: Segoe UI, Arial, sans-serif;
+    margin: 0;
+    background: #f7f9fc;
+    color: #1f2a44;
+  }
+
+  .container {
+    max-width: 920px;
+    margin: 50px auto;
+    padding: 45px;
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 25px;
+  }
+
+  .header img {
+    height: 72px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 32px;
+  }
+
+  .subtitle {
+    margin: 6px 0 0 0;
+    color: #6b7280;
+  }
+
+  h2 {
+    margin-top: 42px;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 8px;
+  }
+
+  .hero {
+    background: linear-gradient(135deg, #eef2ff, #f0fdf4);
+    padding: 22px;
+    border-radius: 12px;
+    margin-bottom: 28px;
+    font-size: 17px;
+  }
+
+  .box {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    padding: 18px;
+    border-radius: 10px;
+    margin: 18px 0;
+  }
+
+  .flow {
+    font-family: Consolas, monospace;
+    background: #f3f4f6;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    margin: 18px 0;
+  }
+
+  code {
+    background: #f3f4f6;
+    padding: 4px 6px;
+    border-radius: 4px;
+  }
+
+  ul {
+    margin-top: 10px;
+  }
+
+  .status {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 12px 0;
+  }
+
+  .ready  { background: #e9f7ef; }
+  .adjust { background: #fff4e5; }
+  .error  { background: #fdecea; }
+
+  .donate-wrap {
+    margin-top: 50px;
+    padding: 20px;
+    border: 1px solid #e5e7eb;
+    background: #fafafa;
+    border-radius: 12px;
+  }
+
+  .donate-btn {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #222;
+    font-weight: 700;
+    background: #fff;
+  }
+
+  .donate-btn:hover {
+    background: #f3f4f6;
+  }
+
+  .small {
+    color: #6b7280;
+    font-size: 12px;
+    margin-top: 30px;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="header">
+  <img src="assets/logo/LufsLensLogo.png" alt="LUFS Lens Logo">
+  <div>
+    <h1>LUFS Lens</h1>
+    <p class="subtitle"><strong>Loudness sanity check for streaming releases</strong></p>
+  </div>
+</div>
+
+<div class="hero">
+  You spent hours perfecting your master.<br>
+  Spotify will spend 0.3 seconds deciding it was too loud.<br><br>
+  LUFS Lens lets you see the verdict before the algorithm does.
+</div>
+
+<h2>What it does</h2>
+
+<p>
+LUFS Lens analyzes your audio files and checks:
+</p>
+
+<ul>
+  <li>Integrated LUFS (overall loudness)</li>
+  <li>True Peak (inter-sample clipping risk)</li>
+  <li>Sample Peak</li>
+  <li>LRA (Loudness Range)</li>
+  <li>Sample rate and technical metadata</li>
+</ul>
+
+<div class="box">
+<strong>Typical streaming reference:</strong><br>
+Around <strong>-14 LUFS integrated</strong> with true peak at or below <strong>-1 dBTP</strong>.
+</div>
+
+<h2>Why -14 LUFS?</h2>
+
+<div class="box">
+Most streaming platforms normalize playback loudness.
+If your track is louder than their target, it will simply be turned down.
+Over-limiting therefore does not make your track louder —
+it only reduces dynamics and increases distortion risk.
+<br><br>
+Checking before upload helps preserve punch and clarity.
+</div>
+
+<h2>How to use</h2>
+
+<p><strong>Option A – Double-click</strong></p>
+<ul>
+  <li>Open <code>LUFS Lens.bat</code></li>
+  <li>Select one or multiple files</li>
+  <li>The report opens automatically</li>
+</ul>
+
+<p><strong>Option B – Drag & Drop</strong></p>
+<ul>
+  <li>Drag a file or folder onto <code>LUFS Lens.bat</code></li>
+</ul>
+
+<div class="flow">
+Your Files → LUFS Lens → Analysis → HTML Report → Streaming Platform
+</div>
+
+<h2>Where are reports saved?</h2>
+
+<p>All reports are saved inside the tool folder:</p>
+
+<p><code>LUFSLens_v1\Reports\</code></p>
+
+<ul>
+  <li><code>loudness_report_TIMESTAMP.html</code></li>
+  <li><code>loudness_report_TIMESTAMP.csv</code></li>
+</ul>
+
+<p>
+HTML = visual overview.<br>
+CSV = spreadsheet-friendly data.
+</p>
+
+<h2>Understanding the Metrics</h2>
+
+<p><strong>Integrated LUFS</strong><br>
+Overall average loudness of the track.
+If significantly above -14 LUFS, it will likely be turned down.
+</p>
+
+<p><strong>True Peak (dBTP)</strong><br>
+Measures inter-sample peaks that can exceed digital 0 dB.
+Keeping it at or below -1 dBTP helps prevent distortion after encoding.
+</p>
+
+<p><strong>Sample Peak (dBFS)</strong><br>
+Highest raw digital sample value.
+Useful for detecting hard clipping.
+</p>
+
+<p><strong>LRA (Loudness Range)</strong><br>
+Indicates dynamic variation.
+Low LRA = heavily compressed.
+Higher LRA = more dynamic contrast.
+</p>
+
+<h2>Status Verdict</h2>
+
+<div class="status ready">
+<strong>READY</strong><br>
+Within LUFS tolerance, safe true peak, correct sample rate.
+</div>
+
+<div class="status adjust">
+<strong>ADJUST</strong><br>
+Outside recommended values. Check the Issues column in the report.
+</div>
+
+<div class="status error">
+<strong>ERROR</strong><br>
+Analysis failed. Check file integrity or format.
+</div>
+
+<div class="donate-wrap">
+  <strong>Support LUFS Lens</strong><br>
+  If this tool saved your mix (or your reputation), you can buy the limiter a coffee.
+  <br>
+  <a class="donate-btn" href="https://ko-fi.com/lufslens" target="_blank" rel="noopener">
+    ☕ Donate via Ko-fi
+  </a>
+</div>
+
+<p class="small">
+LUFS Lens | Contact: <a href="mailto:lufslens@gmail.com">lufslens@gmail.com</a>
+</p>
+
+</div>
+</body>
+</html>
