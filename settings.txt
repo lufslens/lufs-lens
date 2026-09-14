@@ -1,0 +1,3 @@
+# Default target used at startup. Any finite number is allowed.
+# You can override this for one run at the startup prompt.
+TargetLUFS=-14

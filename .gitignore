@@ -1,0 +1,7 @@
+Reports/
+temp/
+ffmpeg/
+tests/run-*/
+__pycache__/
+*.pyc
+dist/

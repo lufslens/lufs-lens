@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>LUFS Lens - README</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LUFS Lens 1.2.0 - User Guide</title>
 
 <style>
   body {
@@ -122,6 +123,12 @@
     font-size: 12px;
     margin-top: 30px;
   }
+  pre { overflow-x: auto; padding: 14px; background: #f3f4f6; }
+  code { overflow-wrap: anywhere; }
+  @media (max-width: 600px) {
+    .container { margin: 12px; padding: 20px; }
+    .header { flex-wrap: wrap; }
+  }
 
 </style>
 </head>
@@ -130,17 +137,17 @@
 <div class="container">
 
 <div class="header">
-  <img src="assets/logo/LufsLensLogo.png" alt="LUFS Lens Logo">
+  <img src="assets/Logo/LufsLensLogo.png" alt="LUFS Lens Logo">
   <div>
-    <h1>LUFS Lens</h1>
-    <p class="subtitle"><strong>Loudness sanity check for streaming releases</strong></p>
+    <h1>LUFS Lens 1.2.0</h1>
+    <p class="subtitle"><strong>User guide · Windows loudness analyzer</strong></p>
   </div>
 </div>
 
 <div class="hero">
-  You spent hours perfecting your master.<br>
-  Spotify will spend 0.3 seconds deciding it was too loud.<br><br>
-  LUFS Lens lets you see the verdict before the algorithm does.
+  Check your audio against your own loudness target.<br>
+  Select files, choose a target, and review the HTML and CSV reports.
+  Analysis runs locally and does not change your audio.
 </div>
 
 <h2>What it does</h2>
@@ -158,44 +165,80 @@ LUFS Lens analyzes your audio files and checks:
 </ul>
 
 <div class="box">
-<strong>Typical streaming reference:</strong><br>
-Around <strong>-14 LUFS integrated</strong> with true peak at or below <strong>-1 dBTP</strong>.
+<strong>Initial settings:</strong><br>
+Target <strong>-14 LUFS</strong>, tolerance <strong>+/-0.5 LU</strong>,
+true-peak limit <strong>-1 dBTP</strong>. The expected sample rates are 44.1 or 48 kHz.
+The target is your comparison reference, not a universal mastering requirement.
 </div>
 
-<h2>Why -14 LUFS?</h2>
-
-<div class="box">
-Most streaming platforms normalize playback loudness.
-If your track is louder than their target, it will simply be turned down.
-Over-limiting therefore does not make your track louder —
-it only reduces dynamics and increases distortion risk.
-<br><br>
-Checking before upload helps preserve punch and clarity.
-</div>
+<h2>Setup and updating</h2>
+<p>Use 64-bit Windows with Windows PowerShell and FFmpeg/ffprobe.
+Extract the ZIP completely into a folder you can write to before starting it.</p>
+<p><strong>Already have LUFS Lens?</strong> Close the app and keep a backup of your old folder.
+Copy the new app files into that folder, replacing matching files.
+Keep your existing <code>ffmpeg</code> and <code>Reports</code> folders.
+If you already customized <code>settings.txt</code>, keep your own copy or restore your target afterward.</p>
+<p><strong>The v1.2.0 app-update ZIP does not contain FFmpeg.</strong>
+For a fresh installation, get a Windows build through the
+<a href="https://www.ffmpeg.org/download.html#build-windows">official FFmpeg download page</a>
+and place both <code>ffmpeg.exe</code> and <code>ffprobe.exe</code> in
+<code>ffmpeg\bin\</code> beside the launcher. Alternatively, make both programs available on PATH.
+Existing bundled installations already have these files.</p>
+<pre>LUFS Lens.bat
+README.html
+settings.txt
+app\LUFS-Lens.ps1
+assets\Logo\LufsLensLogo.png
+ffmpeg\bin\ffmpeg.exe
+ffmpeg\bin\ffprobe.exe</pre>
 
 <h2>How to use</h2>
+
+<p>After selecting or dropping your files, enter your target LUFS in the console.
+Press Enter to use your saved default (initially -14 LUFS). Any finite numeric target is accepted, including decimals
+such as -16.5 (or -16,5). The selected target applies to the entire batch and is
+included in both reports. Status and suggested gain use this target, with a
+tolerance of +/-0.5 LU. This tool analyzes audio; it does not change your files.</p>
+
+<p>For PowerShell use without a prompt:</p>
+<pre>powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\app\LUFS-Lens.ps1" -TargetLUFS -16 -Paths "C:\Music\track.wav"</pre>
+
+<p>To change the startup default, open <code>settings.txt</code> next to
+<code>LUFS Lens.bat</code> in a text editor and change <code>TargetLUFS=-14</code>
+to your preferred value, for example <code>TargetLUFS=-9</code>.
+An explicit command-line target takes priority over the file. Entering a target
+at the prompt changes only that run; it does not rewrite your saved default.
+If the settings file is missing or invalid, the default is -14 LUFS.</p>
 
 <p><strong>Option A – Double-click</strong></p>
 <ul>
   <li>Open <code>LUFS Lens.bat</code></li>
   <li>Select one or multiple files</li>
+  <li>Enter your target or press Enter for the displayed default</li>
+  <li>Follow the track count, analysis stage and elapsed time in the console</li>
   <li>The report opens automatically</li>
 </ul>
 
 <p><strong>Option B – Drag & Drop</strong></p>
 <ul>
   <li>Drag a file or folder onto <code>LUFS Lens.bat</code></li>
+  <li>Enter your target or press Enter for the displayed default</li>
+  <li>Folders include supported files in their subfolders</li>
 </ul>
 
 <div class="flow">
-Your Files → LUFS Lens → Analysis → HTML Report → Streaming Platform
+Your files → Your target → Local analysis → HTML + CSV reports
 </div>
+<p>Supported extensions: <strong>WAV, FLAC, AIF/AIFF, MP3 and M4A</strong>.
+Accented and non-Latin filenames are supported. Reports open after the entire batch finishes.
+Elapsed time updates between stages and completed tracks; it is not a remaining-time estimate.
+Both full analysis passes are retained.</p>
 
 <h2>Where are reports saved?</h2>
 
 <p>All reports are saved inside the tool folder:</p>
 
-<p><code>LUFSLens_v1\Reports\</code></p>
+<p><code>Reports\</code> beside <code>LUFS Lens.bat</code>.</p>
 
 <ul>
   <li><code>loudness_report_TIMESTAMP.html</code></li>
@@ -206,17 +249,20 @@ Your Files → LUFS Lens → Analysis → HTML Report → Streaming Platform
 HTML = visual overview.<br>
 CSV = spreadsheet-friendly data.
 </p>
+<p>Reports include your selected target and local file paths. They remain on your computer
+until you delete or share them. Review filenames and paths before sharing a report.
+The <code>temp</code> folder can contain the last list of selected file paths; you may clear it after closing the app.</p>
 
 <h2>Understanding the Metrics</h2>
 
 <p><strong>Integrated LUFS</strong><br>
 Overall average loudness of the track.
-If significantly above -14 LUFS, it will likely be turned down.
+Compare this measurement with the target you selected for this batch.
 </p>
 
 <p><strong>True Peak (dBTP)</strong><br>
 Measures inter-sample peaks that can exceed digital 0 dB.
-Keeping it at or below -1 dBTP helps prevent distortion after encoding.
+The report checks it against the app's -1 dBTP limit. Remeasure after processing or encoding.
 </p>
 
 <p><strong>Sample Peak (dBFS)</strong><br>
@@ -232,20 +278,58 @@ Higher LRA = more dynamic contrast.
 
 <h2>Status Verdict</h2>
 
+<p><strong>Gain Advice</strong> compares the gain needed to reach your target with
+the available true-peak headroom. For example, if +4 dB is needed but only +1 dB
+is available, the report flags <code>GAIN EXCEEDS PEAK HEADROOM</code> and shows
+the estimated peak after that gain. Gain alone cannot meet both limits; you can
+choose a lower target or adjust the master. This is an estimate from measured
+values, so remeasure the final processed or encoded export. No audio is modified.</p>
+
 <div class="status ready">
 <strong>READY</strong><br>
-Within LUFS tolerance, safe true peak, correct sample rate.
+Within LUFS tolerance, safe true peak, correct sample rate, and target gain fits peak headroom.
 </div>
 
 <div class="status adjust">
 <strong>ADJUST</strong><br>
-Outside recommended values. Check the Issues column in the report.
+Outside the selected target or another check needs attention. Read Issues and Gain Advice.
 </div>
 
 <div class="status error">
 <strong>ERROR</strong><br>
 Analysis failed. Check file integrity or format.
 </div>
+
+<p><code>LUFS HIGH</code> / <code>LUFS LOW</code>: outside the target tolerance.
+<code>TRUE PEAK HOT</code>: measured peak above -1 dBTP.
+<code>SAMPLE RATE CHECK</code>: a sample rate other than 44.1 or 48 kHz; this is a review flag, not proof of bad audio.
+READY describes these checks only and is not a platform approval or a guarantee of audio quality.</p>
+
+<h2>Troubleshooting</h2>
+<ul>
+  <li><strong>No supported files:</strong> select one of the extensions listed above and check that the path still exists.</li>
+  <li><strong>FFmpeg/ffprobe not found:</strong> check the two executable paths shown in Setup. Extract the whole archive before running.</li>
+  <li><strong>Invalid saved target:</strong> use a line such as <code>TargetLUFS=-9</code> in <code>settings.txt</code>. Do not add units or quotes. Invalid settings produce a warning and use -14.</li>
+  <li><strong>Report did not open:</strong> open the newest HTML file in <code>Reports</code> manually.</li>
+  <li><strong>Analysis error:</strong> try playing the file and re-exporting it. Very short or silent audio may not produce finite loudness measurements. Debug text may appear in Reports when parsing fails.</li>
+  <li><strong>Long track seems busy:</strong> the current pass can take time; stage and elapsed-time text update at checkpoints.</li>
+  <li><strong>Need to cancel:</strong> press Ctrl+C in the console. A cancelled batch may not produce a final report.</li>
+  <li><strong>Windows or workplace policy blocks scripts:</strong> follow your device policy or ask its administrator. Administrator privileges are not normally needed for this app.</li>
+</ul>
+<p>For predictable results, use ordinary audio files with one audio stream. Multi-stream containers
+can select different streams for metadata and measurements. The tool does not automatically normalize, limit or export audio.</p>
+
+<h2>What changed in 1.2.0?</h2>
+<ul>
+  <li>Custom target LUFS, a saved default in settings.txt, and per-run overrides.</li>
+  <li>Gain Advice flags insufficient true-peak headroom.</li>
+  <li>Special-character filename fixes and literal folder handling.</li>
+  <li>Track-count and stage progress, with elapsed time.</li>
+  <li>Removed artificial startup messages and delays.</li>
+  <li>Retained both measurement passes following accuracy and timing comparisons.</li>
+</ul>
+<p>LUFS Lens is distributed under its MIT license. FFmpeg is a separate project with its own
+<a href="https://www.ffmpeg.org/legal.html">license terms</a>; it is not covered by the LUFS Lens license.</p>
 
 <div class="donate-wrap">
   <strong>Support LUFS Lens</strong><br>

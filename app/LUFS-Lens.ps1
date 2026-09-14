@@ -1,5 +1,8 @@
 param(
-  [Parameter(ValueFromRemainingArguments = $true)]
+  [ValidateScript({ -not [double]::IsNaN($_) -and -not [double]::IsInfinity($_) })]
+  [double]$TargetLUFS = -14.0,
+  [switch]$PromptForTarget,
+  [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
   [string[]]$Paths
 )
 
@@ -17,7 +20,6 @@ $SupportedExts       = @(".wav", ".flac", ".aif", ".aiff", ".mp3", ".m4a")
 $RecurseFolders      = $true
 
 # Targets / tolerances
-$TargetLUFS          = -14.0
 $LUFSTolerance       = 0.5            # READY if within +/- this many LU
 $MaxTruePeak         = -1.0           # READY if TP <= this (dBTP)
 $AllowedSampleRates  = @(44100, 48000)
@@ -33,7 +35,7 @@ Clear-Host
 
 $bannerColor = "Magenta"
 $lineColor   = "DarkMagenta"
-$version     = "1.1"
+$version     = "1.2.0"
 
 Write-Host ""
 Write-Host "==================================================" -ForegroundColor $lineColor
@@ -49,17 +51,51 @@ Write-Host ""
 Write-Host "==================================================" -ForegroundColor $lineColor
 Write-Host ""
 
-Write-Host "Initializing loudness inspection..." -ForegroundColor Yellow
-Start-Sleep -Milliseconds 300
-Write-Host "Calibrating peak detectors..." -ForegroundColor Yellow
-Start-Sleep -Milliseconds 300
-Write-Host "Preparing loudness verdict..." -ForegroundColor Yellow
-Start-Sleep -Milliseconds 300
-Write-Host ""
+# Explicit command-line targets take priority over the saved default.
+$settingsPath = Join-Path $ToolRoot "settings.txt"
+if (-not $PSBoundParameters.ContainsKey('TargetLUFS') -and (Test-Path -LiteralPath $settingsPath)) {
+  try {
+    $settings = Get-Content -LiteralPath $settingsPath -Raw -ErrorAction Stop | ConvertFrom-StringData -ErrorAction Stop
+    $savedTarget = 0.0
+    $savedText = ([string]$settings.TargetLUFS).Trim().Replace(',', '.')
+    $valid = [double]::TryParse($savedText,
+      [System.Globalization.NumberStyles]::Float,
+      [System.Globalization.CultureInfo]::InvariantCulture,
+      [ref]$savedTarget)
+    if (-not $valid -or [double]::IsNaN($savedTarget) -or [double]::IsInfinity($savedTarget)) {
+      throw "TargetLUFS must be a finite number."
+    }
+    $TargetLUFS = $savedTarget
+  } catch {
+    Write-Warning "Could not read a valid TargetLUFS from settings.txt. Using $TargetLUFS LUFS."
+  }
+}
 
 # -----------------------------
 # Helpers
 # -----------------------------
+function Get-GainAdvice {
+  param($IntegratedLUFS, $TruePeak, [double]$Target, [double]$PeakLimit)
+  $advice = [PSCustomObject]@{ Limited = $false; Message = "Unavailable: no finite loudness/true-peak measurement." }
+  if ($null -eq $IntegratedLUFS -or $null -eq $TruePeak -or
+      [double]::IsNaN($IntegratedLUFS) -or [double]::IsInfinity($IntegratedLUFS) -or
+      [double]::IsNaN($TruePeak) -or [double]::IsInfinity($TruePeak)) { return $advice }
+
+  $gain = $Target - [double]$IntegratedLUFS
+  $headroom = $PeakLimit - [double]$TruePeak
+  $projectedPeak = [double]$TruePeak + $gain
+  if ([double]::IsInfinity($gain) -or [double]::IsInfinity($projectedPeak)) { return $advice }
+  $advice.Limited = ($gain - $headroom -gt 0.000000001)
+  if ($advice.Limited) {
+    $advice.Message = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture,
+      "Target needs {0:+0.00;-0.00;0.00} dB; peak limit allows at most {1:+0.00;-0.00;0.00} dB. Estimated peak at target: {2:0.00} dBTP (limit {3:0.00}). Gain alone cannot meet both limits.",
+      $gain, $headroom, $projectedPeak, $PeakLimit)
+  } else {
+    $advice.Message = "Target gain fits the measured peak headroom."
+  }
+  return $advice
+}
+
 function Get-AudioFilesFromPath([string]$p) {
   if (-not $p) { return @() }
 
@@ -69,7 +105,7 @@ function Get-AudioFilesFromPath([string]$p) {
   if (-not (Test-Path -LiteralPath $p)) { return @() }
 
   if (Test-Path -LiteralPath $p -PathType Container) {
-    $opts = @{ Path = $p; File = $true }
+    $opts = @{ LiteralPath = $p; File = $true }
     if ($RecurseFolders) { $opts.Recurse = $true }
     return Get-ChildItem @opts | Where-Object { $SupportedExts -contains $_.Extension.ToLower() }
   }
@@ -208,6 +244,26 @@ if (-not $files -or $files.Count -eq 0) {
 # -----------------------------
 # Output / temp folders (always inside tool root)
 # -----------------------------
+if ($PromptForTarget) {
+  while ($true) {
+    $answer = Read-Host "Target LUFS (Enter for $TargetLUFS)"
+    if ([string]::IsNullOrWhiteSpace($answer)) { break }
+
+    $parsedTarget = 0.0
+    $normalized = $answer.Trim().Replace(',', '.')
+    $valid = [double]::TryParse($normalized,
+      [System.Globalization.NumberStyles]::Float,
+      [System.Globalization.CultureInfo]::InvariantCulture,
+      [ref]$parsedTarget)
+    if ($valid -and -not [double]::IsNaN($parsedTarget) -and -not [double]::IsInfinity($parsedTarget)) {
+      $TargetLUFS = $parsedTarget
+      break
+    }
+    Write-Host "Enter a finite number, such as -14 or -16.5." -ForegroundColor Yellow
+  }
+}
+Write-Host "Target: $TargetLUFS LUFS (tolerance +/-$LUFSTolerance LU)"
+
 $timestamp  = Get-Date -Format "yyyyMMdd_HHmmss"
 $reportsDir = Join-Path $ToolRoot "Reports"
 $tempDir    = Join-Path $ToolRoot "temp"
@@ -227,8 +283,19 @@ Write-Host "Output CSV: $outCsv`n"
 # -----------------------------
 # Main loop
 # -----------------------------
+$analysisTimer = [System.Diagnostics.Stopwatch]::StartNew()
+$fileIndex = 0
+$fileCount = @($files).Count
+function Show-AnalysisProgress([string]$stage) {
+  $elapsed = $analysisTimer.Elapsed.ToString('hh\:mm\:ss')
+  Write-Progress -Id 1 -Activity "LUFS Lens - Track $fileIndex of $fileCount" `
+    -Status "$($file.Name) | $stage | Elapsed $elapsed" `
+    -PercentComplete (100 * ($fileIndex - 1) / $fileCount)
+}
 $results = foreach ($file in $files) {
-  Write-Host "Analyzing $($file.Name)..."
+  $fileIndex++
+  Write-Host "Track $fileIndex of ${fileCount}: $($file.Name)"
+  Show-AnalysisProgress "Reading metadata"
 
   # ---- ffprobe: duration, SR, bit depth, channels, codec, bitrate ----
   $durationSec = $null
@@ -270,12 +337,15 @@ $results = foreach ($file in $files) {
   $durationStr = if ($durationSec) { Format-Duration $durationSec } else { "" }
 
   # ---- loudnorm: Integrated LUFS, True Peak, LRA ----
+  Show-AnalysisProgress "Measuring loudness and true peak (pass 1 of 2)"
   $I = $null; $TP = $null; $LRA = $null
 
-  $targetStr = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:0.###}", $TargetLUFS)
+  # loudnorm requires an internal normalization target in its supported range.
+  # We read only input measurements and discard its output; the user's comparison
+  # target is applied separately to suggested gain, verdicts, and reports.
   $tpStr     = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:0.###}", $MaxTruePeak)
 
-  $loudnormFilter = "loudnorm=I=${targetStr}:TP=${tpStr}:LRA=8:print_format=json"
+  $loudnormFilter = "loudnorm=I=-14:TP=${tpStr}:LRA=8:print_format=json"
   if ($ShowDebugLines) { Write-Host "LOUDNORM FILTER: $loudnormFilter" }
 
   $oldEap = $ErrorActionPreference
@@ -321,8 +391,10 @@ $results = foreach ($file in $files) {
   }
 
   $suggestedGain = if ($null -ne $I) { [math]::Round(($TargetLUFS - $I), 2) } else { $null }
+  $gainAdvice = Get-GainAdvice -IntegratedLUFS $I -TruePeak $TP -Target $TargetLUFS -PeakLimit $MaxTruePeak
 
   # ---- sample peak (dBFS) via astats (overall, full-file) ----
+  Show-AnalysisProgress "Measuring sample peak (pass 2 of 2)"
   $samplePeak = $null
 
   $oldEap = $ErrorActionPreference
@@ -352,6 +424,7 @@ $results = foreach ($file in $files) {
   if (-not $analysisOk) { $issues += "ANALYSIS ERROR" }
 
   if ($null -ne $TP -and $TP -gt $MaxTruePeak) { $issues += "TRUE PEAK HOT" }
+  if ($gainAdvice.Limited) { $issues += "GAIN EXCEEDS PEAK HEADROOM" }
 
   $srOk = ($null -eq $sampleRate -or ($AllowedSampleRates -contains $sampleRate))
   if (-not $srOk) { $issues += "SAMPLE RATE CHECK" }
@@ -366,7 +439,7 @@ $results = foreach ($file in $files) {
 
   $status =
     if (-not $analysisOk) { "ERROR" }
-    elseif ($withinLUFS -and $safeTP -and $srOk) { "READY" }
+    elseif ($withinLUFS -and $safeTP -and $srOk -and -not $gainAdvice.Limited) { "READY" }
     else { "ADJUST" }
 
   $issuesText = if ($issues.Count -gt 0) { $issues -join "|" } else { "NONE" }
@@ -381,7 +454,9 @@ $results = foreach ($file in $files) {
     Codec            = $codec
 
     IntegratedLUFS   = $I
+    TargetLUFS       = $TargetLUFS
     SuggestedGain_dB = $suggestedGain
+    GainAdvice       = $gainAdvice.Message
     TruePeak_dBTP    = $TP
     SamplePeak_dBFS  = $samplePeak
     LRA              = $LRA
@@ -390,7 +465,10 @@ $results = foreach ($file in $files) {
     Issues           = $issuesText
     Path             = $file.FullName
   }
+  Write-Host ("Completed {0} of {1} | Elapsed {2}" -f $fileIndex, $fileCount, $analysisTimer.Elapsed.ToString('hh\:mm\:ss'))
 }
+$analysisTimer.Stop()
+Write-Progress -Id 1 -Activity "LUFS Lens" -Completed
 
 # -----------------------------
 # Write CSV
@@ -472,7 +550,9 @@ $rows = @(
       Channels         = $_.Channels
       Codec            = $_.Codec
       IntegratedLUFS   = $_.IntegratedLUFS
+      TargetLUFS       = $_.TargetLUFS
       SuggestedGain_dB = $_.SuggestedGain_dB
+      GainAdvice       = $_.GainAdvice
       TruePeak_dBTP    = $_.TruePeak_dBTP
       SamplePeak_dBFS  = $_.SamplePeak_dBFS
       LRA              = $_.LRA
@@ -512,7 +592,7 @@ $limQuotes = @(
   "Pride comes before -0.1 dBTP.",
   "Ask not what your limiter can do for you. Ask what you did to your transients.",
   "Peak performance requires peak restraint.",
-  "All roads lead to -14 LUFS."
+  "All roads lead to $TargetLUFS LUFS."
 )
 
 $randomQuote   = Get-Random -InputObject $limQuotes
@@ -574,9 +654,10 @@ $legend = @"
   <ul>
     <li><b>Integrated LUFS</b>: average loudness of the whole track. Target here: <code>$TargetLUFS LUFS</code> (tolerance +/-<code>$LUFSTolerance</code>).</li>
     <li><b>True Peak (dBTP)</b>: catches intersample peaks. Limit here: <code>$MaxTruePeak dBTP</code>.</li>
+    <li><b>Gain Advice</b>: compares target gain with measured true-peak headroom. A warning means gain alone cannot reach the exact target and respect the peak limit; choose a lower target or adjust the master. Estimates use rounded measurements and assume a simple gain change; remeasure any processed or encoded export. Audio files are never changed.</li>
     <li><b>Sample Peak (dBFS)</b>: highest raw digital sample. Useful for spotting hard digital clipping; true peak is the stricter safety check.</li>
     <li><b>LRA</b> (Loudness Range): how dynamic the track is. Low LRA often means heavy compression/limiting; high LRA means more dynamics.</li>
-    <li><b>Quick read</b>: <b>READY</b> = within LUFS tolerance + safe true peak + expected sample rate. <b>ADJUST</b> = check the Issues column.</li>
+    <li><b>Quick read</b>: <b>READY</b> = within LUFS tolerance + safe true peak + expected sample rate + target gain fits peak headroom. <b>ADJUST</b> = check the Issues column.</li>
   </ul>
 </div>
 "@

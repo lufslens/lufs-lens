@@ -7,7 +7,7 @@ set "TOOLDIR=%~dp0"
 
 REM If user dragged files/folders onto the BAT, run immediately
 if not "%~1"=="" (
-  "%PS%" -NoProfile -ExecutionPolicy Bypass -File "%TOOLDIR%app\LUFS-Lens.ps1" %*
+  "%PS%" -NoProfile -ExecutionPolicy Bypass -File "%TOOLDIR%app\LUFS-Lens.ps1" -PromptForTarget %*
   echo.
   pause
   exit /b
@@ -26,8 +26,8 @@ REM Double-click: open picker, write selections to temp list file, run PS1 using
   "$d.Multiselect = $true; " ^
   "if($d.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) { exit 2 } " ^
   "$list = Join-Path $temp 'LUFS_SelectedFiles.txt'; " ^
-  "$d.FileNames | Set-Content -LiteralPath $list -Encoding Ascii; " ^
-  "& (Join-Path $tool 'app\LUFS-Lens.ps1') ('@' + $list); " ^
+  "$d.FileNames | Set-Content -LiteralPath $list -Encoding UTF8; " ^
+  "& (Join-Path $tool 'app\LUFS-Lens.ps1') -PromptForTarget -Paths ('@' + $list); " ^
   "exit $LASTEXITCODE"
 
 echo.
