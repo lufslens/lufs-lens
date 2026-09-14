@@ -6,8 +6,8 @@ Analyze audio against your own loudness target and get local HTML and CSV report
 
 ## Start here
 
-1. Download the app-update ZIP from [Releases](https://github.com/lufslens/lufs-lens/releases) and extract it completely.
-2. Make sure FFmpeg and ffprobe are available as described below.
+1. Download the app-update ZIP from [Releases](https://github.com/lufslens/lufs-lens/releases) and extract it into a **new folder**, for example `LUFS Lens 1.2.0`.
+2. Copy the entire **`ffmpeg` folder** from your old installation into the new folder, beside `LUFS Lens.bat`. If this is your first installation, follow Setup below.
 3. Double-click **LUFS Lens.bat**, select your audio, then enter a target or press **Enter** for the displayed default.
 4. Follow the track count and analysis stages. The HTML report opens when the batch finishes; both reports are saved in **Reports** beside the launcher.
 
@@ -19,7 +19,9 @@ Open [README.html](README.html) locally for the full user guide, examples and tr
 
 Use 64-bit Windows with Windows PowerShell and FFmpeg/ffprobe. Keep the app in a folder where you can save files. Administrator privileges are not normally needed.
 
-**Updating an existing installation:** close the app, keep a backup, then copy the new app files into your existing LUFS Lens folder, replacing matching files. Keep your existing `ffmpeg` and `Reports` folders. Preserve your own `settings.txt` if you have customized it, or restore your preferred value afterward.
+**Try the new version in its own folder:** extract the new ZIP into an empty folder, then copy (not move) the entire `ffmpeg` folder from your old installation into it. Put it beside the new `LUFS Lens.bat`, then double-click that launcher. Your old installation and reports stay untouched, so you can return to them whenever you like. New reports will be saved in the new folder's `Reports` directory.
+
+To keep a preferred default, edit the new `settings.txt`, or optionally copy your previous customized settings file into the new folder. Otherwise the initial default is -14 LUFS. You do not need to copy old reports or replace any files in your old installation.
 
 **The v1.2.0 app-update ZIP does not include FFmpeg binaries.** Existing bundled installations can keep their current `ffmpeg` folder. For a fresh installation, obtain a Windows build through the [official FFmpeg download page](https://www.ffmpeg.org/download.html#build-windows) and place both executables here:
 

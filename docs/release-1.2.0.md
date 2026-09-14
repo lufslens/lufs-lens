@@ -4,7 +4,9 @@
 
 Phase: Learn. Maturity: Production, reflecting the existing public distribution of a local convenience utility, not a claim of certified metering. This is maintenance of the public v1.0.0 release, not a new application or hosted service.
 
-G4 passed: [v1.2.0 was published](https://github.com/lufslens/lufs-lens/releases/tag/v1.2.0) on 2026-09-14 at 13:28:45 UTC from source commit `40b0474`. The uploaded ZIP's GitHub digest matched the locally verified SHA-256 `7811972a5481753c3413fc5cf57928d7dbea9003c0fcca1ffc36b06ff1ddbfa4`. The extracted ZIP also passed the Windows PowerShell usability tests before upload. This post-publication record does not change the tagged application or released archive. G5: awaiting user feedback; Reddit remains deferred.
+G4 passed: [v1.2.0 was published](https://github.com/lufslens/lufs-lens/releases/tag/v1.2.0) on 2026-09-14 at 13:28:45 UTC from source commit `40b0474`. The original ZIP's GitHub digest matched the locally verified SHA-256 `7811972a5481753c3413fc5cf57928d7dbea9003c0fcca1ffc36b06ff1ddbfa4`. The extracted ZIP also passed the Windows PowerShell usability tests before upload.
+
+Owner-requested documentation refresh: recommend extracting into a new folder and copying the existing `ffmpeg` folder beside the new launcher. The app, launcher, default settings and measurement behavior are unchanged. The release ZIP and its checksum files are refreshed together; use the current release asset digest and SHA256SUMS.txt for the revised archive. The original archive is retained locally for recovery. The source tag remains unchanged; current documentation is on main. G5: setup feedback addressed; Reddit reply is drafted but publication remains deferred.
 
 The repository owner requested updated documentation and publication of the latest version to the existing GitHub repository on 2026-09-14. The owner controls release, rollback, risk acceptance and support. Reddit publication is explicitly deferred.
 

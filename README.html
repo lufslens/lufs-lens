@@ -173,11 +173,17 @@ The target is your comparison reference, not a universal mastering requirement.
 
 <h2>Setup and updating</h2>
 <p>Use 64-bit Windows with Windows PowerShell and FFmpeg/ffprobe.
-Extract the ZIP completely into a folder you can write to before starting it.</p>
-<p><strong>Already have LUFS Lens?</strong> Close the app and keep a backup of your old folder.
-Copy the new app files into that folder, replacing matching files.
-Keep your existing <code>ffmpeg</code> and <code>Reports</code> folders.
-If you already customized <code>settings.txt</code>, keep your own copy or restore your target afterward.</p>
+Extract the ZIP completely into a new folder you can write to before starting it.</p>
+<p><strong>Already have LUFS Lens? Try this version in a new folder:</strong></p>
+<ol>
+  <li>Extract the v1.2.0 ZIP into an empty folder, for example <code>LUFS Lens 1.2.0</code>.</li>
+  <li>Copy (not move) the entire <code>ffmpeg</code> folder from your old installation into the new folder, beside <code>LUFS Lens.bat</code>.</li>
+  <li>Double-click the new <code>LUFS Lens.bat</code>, select your audio, and choose your target.</li>
+</ol>
+<p>Your old installation and reports stay untouched. New reports go into the new folder's
+<code>Reports</code> directory. No files in the old installation need replacing.</p>
+<p>To keep a preferred default, edit the new <code>settings.txt</code> or optionally copy your
+previous customized settings file into the new folder. Otherwise the initial default is -14 LUFS.</p>
 <p><strong>The v1.2.0 app-update ZIP does not contain FFmpeg.</strong>
 For a fresh installation, get a Windows build through the
 <a href="https://www.ffmpeg.org/download.html#build-windows">official FFmpeg download page</a>
